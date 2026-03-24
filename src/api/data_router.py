@@ -6,7 +6,7 @@ from src.data.csv_loader import CSVLoader
 router = APIRouter()
 DB_PATH = "project_db.db"
 
-@router.post("/upload")
+@router.post("/upload", summary="Upload and Load CSV to SQLite", description="Ingests a CSV file, infers its schema, and loads it into a specified SQLite table.")
 async def upload_csv(table_name: str, file: UploadFile = File(...)):
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed")
