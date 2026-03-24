@@ -1,12 +1,17 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException
 import shutil
 import os
-from src.data.csv_loader import CSVLoader
+from csv_loader import CSVLoader
 
-router = APIRouter()
+app = FastAPI(
+    title="CSV Ingestor Service",
+    description="A service to upload CSV files and load them into SQLite.",
+    version="1.0.0"
+)
+
 DB_PATH = "project_db.db"
 
-@router.post("/upload", summary="Upload and Load CSV to SQLite", description="Ingests a CSV file, infers its schema, and loads it into a specified SQLite table.")
+@app.post("/upload", summary="Upload and Load CSV to SQLite", description="Ingests a CSV file, infers its schema, and loads it into a specified SQLite table.")
 async def upload_csv(table_name: str, file: UploadFile = File(...)):
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are allowed")
@@ -25,3 +30,11 @@ async def upload_csv(table_name: str, file: UploadFile = File(...)):
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+@app.get("/")
+def root():
+    return {"message": "CSV Ingestor Service is running"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=5001)

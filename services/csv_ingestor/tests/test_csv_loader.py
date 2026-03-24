@@ -2,7 +2,7 @@ import unittest
 import os
 import sqlite3
 import pandas as pd
-from src.data.csv_loader import CSVLoader
+from ..csv_loader import CSVLoader
 
 class TestCSVLoader(unittest.TestCase):
     def setUp(self):

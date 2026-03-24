@@ -1,6 +1,7 @@
-pandas
 fastapi
 uvicorn
 python-multipart
-httpx
+pandas
 pytest
+httpx
+pydantic
