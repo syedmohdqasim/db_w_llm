@@ -1,7 +1,10 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import shutil
 import os
-from csv_loader import CSVLoader
+try:
+    from .csv_loader import CSVLoader
+except (ImportError, ValueError):
+    from csv_loader import CSVLoader
 
 app = FastAPI(
     title="CSV Ingestor Service",
