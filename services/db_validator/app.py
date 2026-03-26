@@ -25,17 +25,25 @@ async def validate_sql(request: QueryRequest = Body(...)):
     # Syntax check using sqlite3 (dry run)
     try:
         conn = sqlite3.connect(":memory:")
-        # We don't know the table names, so we can't fully validate SELECTs without mocking.
-        # But we can at least check if it's a structural failure.
-        if query.startswith("SELECT"):
-            if "FROM" not in query:
-                raise HTTPException(status_code=400, detail="SELECT query missing FROM clause")
-        else:
+        # EXPLAIN will catch syntax errors. 
+        # It might also fail if tables don't exist, so we check the error message.
+        try:
             conn.execute(f"EXPLAIN {request.query}")
-        conn.close()
+        except sqlite3.Error as e:
+            error_msg = str(e).lower()
+            # If it's a "no such table" error, the syntax itself is likely fine.
+            if "no such table" in error_msg or "no such column" in error_msg:
+                pass 
+            else:
+                raise HTTPException(status_code=400, detail=f"SQLite syntax error: {str(e)}")
+        finally:
+            conn.close()
+        
         return {"valid": True, "message": "Syntax is valid"}
-    except sqlite3.Error as e:
-        raise HTTPException(status_code=400, detail=f"SQLite syntax error: {str(e)}")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/")
 def root():

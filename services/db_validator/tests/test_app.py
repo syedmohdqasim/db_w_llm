@@ -20,7 +20,7 @@ class TestValidatorService(unittest.TestCase):
         # Invalid syntax
         response = self.client.post('/validate', json={'query': 'SELECT FROM'})
         self.assertEqual(response.status_code, 400)
-        self.assertIn("SELECT query missing FROM clause", response.json()['detail'])
+        self.assertIn("SQLite syntax error", response.json()['detail'])
 
 if __name__ == '__main__':
     unittest.main()
