@@ -74,9 +74,15 @@ python tests/comprehensive_test.py
 ```
 
 ### 4. Testing
-Run the suite of unit tests for all services:
+To run the full suite of unit tests, ensure your `PYTHONPATH` includes the project root:
 ```bash
+export PYTHONPATH=$PYTHONPATH:.
 pytest services/*/tests
+```
+
+To run the end-to-end integration tests:
+```bash
+python tests/comprehensive_test.py
 ```
 
 ## Security
