@@ -5,3 +5,5 @@ pandas
 pytest
 httpx
 pydantic
+google-generativeai
+python-dotenv
