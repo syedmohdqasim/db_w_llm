@@ -8,6 +8,11 @@ venv/
 .Python
 env/
 .env/
+.env
+*.db
 build/
 dist/
 *.egg-info/
+test_data.csv
+employees.csv
+depts.csv
