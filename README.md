@@ -2,6 +2,10 @@
 
 A microservices-based system that allows users to query SQLite databases using natural language, powered by Google Gemini.
 
+## Demo Video
+
+[![Watch the video](https://img.youtube.com/vi/SXF6q6aVOWo/0.jpg)](https://youtu.be/SXF6q6aVOWo)
+
 ## System Architecture
 
 The project is structured as a set of independent FastAPI microservices, each handling a specific part of the data-to-information lifecycle.
