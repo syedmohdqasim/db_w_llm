@@ -40,28 +40,29 @@ def manage_services():
     
     # Wait for all services to be ready
     print("\nWaiting for services to boot...")
-    for name, url in SERVICES.items():
+    for i, (name, url) in enumerate(SERVICES.items()):
+        current_proc = processes[i]
         ready = False
         # Increase wait time for the LLM adapter (it imports heavy libraries)
         wait_limit = 20 if name == "llm_adapter" else 10
-        for i in range(wait_limit):
+        for _ in range(wait_limit):
             try:
                 resp = httpx.get(url, timeout=1.0)
                 if resp.status_code == 200:
                     ready = True
                     break
-            except:
+            except Exception:
                 pass
             time.sleep(1)
         if not ready:
             print(f"FAILED: Service {name} at {url} did not respond.")
             # Check if process is still running
-            if p.poll() is not None:
-                print(f"Service {name} process exited with code {p.poll()}")
+            if current_proc.poll() is not None:
+                print(f"Service {name} process exited with code {current_proc.poll()}")
             for p_to_kill in processes:
                 try:
                     os.killpg(os.getpgid(p_to_kill.pid), signal.SIGTERM)
-                except:
+                except Exception:
                     pass
             pytest.fail(f"Service {name} failed to start at {url}")
 
