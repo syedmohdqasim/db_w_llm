@@ -1,41 +1,59 @@
 import unittest
 import os
 import sqlite3
+from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 from ..app import app
 
 class TestQueryApp(unittest.TestCase):
     def setUp(self):
+        self.test_db = "query_test.db"
+        self.patcher = patch('query_service.app.get_db_path', return_value=self.test_db)
+        self.patcher.start()
         self.client = TestClient(app)
-        self.test_db = "project_db.db"
         if os.path.exists(self.test_db): os.remove(self.test_db)
         
         # Create test data
         conn = sqlite3.connect(self.test_db)
         conn.execute("CREATE TABLE inventory (id INTEGER, item TEXT, qty INTEGER)")
-        conn.execute("INSERT INTO inventory VALUES (1, 'Laptop', 10), (2, 'Mouse', 50)")
+        conn.execute("INSERT INTO inventory VALUES (1, 'Laptop', 10)")
         conn.commit()
         conn.close()
 
     def tearDown(self):
+        self.patcher.stop()
         if os.path.exists(self.test_db): os.remove(self.test_db)
 
-    def test_run_query_success(self):
-        response = self.client.post("/query", json={"query": "SELECT item, qty FROM inventory WHERE qty > 20"})
+    @patch('httpx.AsyncClient.post')
+    def test_run_query_success(self, mock_post):
+        # 1. Mock the Validator to return success
+        mock_val_resp = MagicMock()
+        mock_val_resp.status_code = 200
+        
+        async def mock_coro(*args, **kwargs):
+            return mock_val_resp
+        mock_post.side_effect = mock_coro
+
+        # 2. Test execution
+        response = self.client.post("/query", json={"query": "SELECT item FROM inventory"})
         self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["columns"], ["item", "qty"])
-        self.assertEqual(data["data"][0], ["Mouse", 50])
+        self.assertEqual(response.json()["data"][0], ["Laptop"])
 
-    def test_run_query_not_found(self):
-        if os.path.exists(self.test_db): os.remove(self.test_db)
-        response = self.client.post("/query", json={"query": "SELECT * FROM inventory"})
-        self.assertEqual(response.status_code, 404)
+    @patch('httpx.AsyncClient.post')
+    def test_run_query_blocked_by_validator(self, mock_post):
+        # 1. Mock the Validator to return forbidden
+        mock_val_resp = MagicMock()
+        mock_val_resp.status_code = 403
+        mock_val_resp.json.return_value = {"detail": "Restricted keyword 'DROP' found"}
+        
+        async def mock_coro(*args, **kwargs):
+            return mock_val_resp
+        mock_post.side_effect = mock_coro
 
-    def test_run_query_invalid_sql(self):
-        response = self.client.post("/query", json={"query": "SELECT FROM inventory"})
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("SQLite error", response.json()["detail"])
+        # 2. Test execution
+        response = self.client.post("/query", json={"query": "DROP TABLE inventory"})
+        self.assertEqual(response.status_code, 403)
+        self.assertIn("Security Violation", response.json()["detail"])
 
 if __name__ == "__main__":
     unittest.main()

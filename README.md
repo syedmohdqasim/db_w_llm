@@ -23,8 +23,8 @@ sequenceDiagram
     participant LLM_Adapter as LLM Adapter (5005)
     participant Schema_Mgr as Schema Manager (5003)
     participant Gemini as Google Gemini API
-    participant Validator as DB Validator (5002)
     participant Query_Svc as Query Service (5004)
+    participant Validator as DB Validator (5002)
     participant DB as SQLite DB
 
     User->>LLM_Adapter: Natural Language Question
@@ -34,18 +34,20 @@ sequenceDiagram
     Gemini-->>LLM_Adapter: Generated SQL Query
     LLM_Adapter-->>User: SQL Query string
     
-    Note over User, DB: Execution Flow
+    Note over User, DB: Execution Flow (Secure by Default)
     
-    User->>Validator: SQL Query
-    Validator->>Validator: Check Syntax & Security (DROP/DELETE/etc.)
+    User->>Query_Svc: SQL Query
+    Query_Svc->>Validator: POST /validate (Auto-Check)
+    Validator->>Validator: Check Syntax & Security
+    
     alt is Valid
-        Validator-->>User: Validated OK
-        User->>Query_Svc: SQL Query
+        Validator-->>Query_Svc: Validated OK (200)
         Query_Svc->>DB: Execute SQL
         DB-->>Query_Svc: Data Rows
         Query_Svc-->>User: Structured Results (JSON)
     else is Invalid/Malicious
-        Validator-->>User: 403 Forbidden / 400 Syntax Error
+        Validator-->>Query_Svc: 403 Forbidden / 400 Error
+        Query_Svc-->>User: Error Response (Blocked)
     end
 ```
 
@@ -68,21 +70,31 @@ sequenceDiagram
     ```
 
 ### 3. Running the System
-You can start all services and verify the system using the comprehensive integration test:
+You can start and verify the entire system using the automated integration suite:
 ```bash
-python tests/comprehensive_test.py
+export PYTHONPATH=$PYTHONPATH:.
+pytest tests/test_integration.py
 ```
 
 ### 4. Testing
-To run the full suite of unit tests, ensure your `PYTHONPATH` includes the project root:
+Ensure your `PYTHONPATH` includes the project root:
 ```bash
 export PYTHONPATH=$PYTHONPATH:.
+```
+
+To run **all tests** (Unit + Integration):
+```bash
+pytest
+```
+
+To run only **unit tests**:
+```bash
 pytest services/*/tests
 ```
 
-To run the end-to-end integration tests:
+To run only **integration tests** (starts all microservices automatically):
 ```bash
-python tests/comprehensive_test.py
+pytest tests/test_integration.py
 ```
 
 ## Security

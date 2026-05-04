@@ -3,15 +3,19 @@ import os
 import sqlite3
 import io
 from fastapi.testclient import TestClient
+from unittest.mock import patch
 from ..app import app
 
 class TestDataService(unittest.TestCase):
     def setUp(self):
+        self.test_db = "csv_test.db"
+        self.patcher = patch('csv_ingestor.app.get_db_path', return_value=self.test_db)
+        self.patcher.start()
         self.client = TestClient(app)
-        self.test_db = "project_db.db"
         if os.path.exists(self.test_db): os.remove(self.test_db)
 
     def tearDown(self):
+        self.patcher.stop()
         if os.path.exists(self.test_db): os.remove(self.test_db)
 
     def test_upload_success(self):

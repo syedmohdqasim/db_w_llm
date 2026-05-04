@@ -12,7 +12,8 @@ app = FastAPI(
     version="1.0.0"
 )
 
-DB_PATH = "project_db.db"
+def get_db_path():
+    return os.getenv("DB_PATH", "project_db.db")
 
 @app.post("/upload", summary="Upload and Load CSV to SQLite", description="Ingests a CSV file, infers its schema, and loads it into a specified SQLite table.")
 async def upload_csv(table_name: str, file: UploadFile = File(...)):
@@ -25,7 +26,7 @@ async def upload_csv(table_name: str, file: UploadFile = File(...)):
         shutil.copyfileobj(file.file, buffer)
     
     try:
-        loader = CSVLoader(DB_PATH)
+        loader = CSVLoader(get_db_path())
         loader.load_csv(temp_path, table_name)
         return {"message": f"Successfully loaded {file.filename} into table {table_name}"}
     except Exception as e:

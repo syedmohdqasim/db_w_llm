@@ -2,14 +2,16 @@ import unittest
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 import os
-
-# Set dummy key for app initialization
-os.environ["GEMINI_API_KEY"] = "test_key"
 import services.llm_adapter.app as llm_app
 
 class TestLLMApp(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(llm_app.app)
+        self.env_patcher = patch.dict(os.environ, {"GEMINI_API_KEY": "test_key"})
+        self.env_patcher.start()
+
+    def tearDown(self):
+        self.env_patcher.stop()
 
     @patch('httpx.AsyncClient.get')
     @patch('services.llm_adapter.app.get_adapter')
